@@ -101,18 +101,18 @@ RUN set -ex; \
 	rm /tmp/pubkey.asc; \
 	gpg --batch --verify roundcubemail.tar.gz.asc roundcubemail.tar.gz; \
 	gpgconf --kill all; \
-	mkdir -p /var/www/html; \
-	tar -xf roundcubemail.tar.gz -C /var/www/html --strip-components=1 --no-same-owner; \
+	mkdir -p /usr/src/roundcubemail; \
+	tar -xf roundcubemail.tar.gz -C /usr/src/roundcubemail --strip-components=1 --no-same-owner; \
 	rm -r "$GNUPGHOME" roundcubemail.tar.gz.asc roundcubemail.tar.gz; \
-	rm -rf /var/www/html/installer; \
-	chown -R www-data:www-data /var/www/html/logs; \
+	rm -rf /usr/src/roundcubemail/installer; \
+	chown -R www-data:www-data /usr/src/roundcubemail/logs; \
 	apk del .fetch-deps
 
 # ISPconfig 1.0.0
-RUN curl -fSL https://github.com/w2c/ispconfig3_roundcube/archive/refs/tags/1.0.0.tar.gz -o /tmp/1.0.0.tar.gz
-RUN tar -xf /tmp/1.0.0.tar.gz -C /tmp/
-RUN mv /tmp/ispconfig3_roundcube-1.0.0/ispconfig3_* /var/www/html/plugins/
-RUN rm -rf /tmp/ispconfig3_roundcube-1.0.0 /tmp/1.0.0.tar.gz
+RUN curl -fSL https://github.com/w2c/ispconfig3_roundcube/archive/refs/tags/1.0.0.tar.gz -o 1.0.0.tar.gz
+RUN tar -xf 1.0.0.tar.gz
+RUN mv ispconfig3_roundcube-1.0.0/ispconfig3_* /usr/src/roundcubemail/plugins/
+RUN rm -rf ispconfig3_roundcube-1.0.0 1.0.0.tar.gz
 
 # include the wait-for-it.sh script
 RUN curl -fL https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh > /wait-for-it.sh && chmod +x /wait-for-it.sh
@@ -122,9 +122,7 @@ COPY php.ini /usr/local/etc/php/conf.d/roundcube-defaults.ini
 
 COPY --chmod=0755 docker-entrypoint.sh /
 
-# RUN mkdir -p /var/roundcube/config
-
-WORKDIR /var/www/html
+RUN mkdir -p /var/roundcube/config
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["php-fpm"]
