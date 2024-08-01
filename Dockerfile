@@ -1,4 +1,4 @@
-FROM php:8.1-fpm-alpine
+FROM php:8.2-fpm-alpine
 LABEL maintainer="Vincenzo Ingrosso <vincenzo@ingrosso.net>"
 
 # entrypoint.sh and installto.sh dependencies
@@ -46,7 +46,7 @@ RUN set -ex; \
 		soap \
 	; \
 	pecl install imagick redis; \
-	docker-php-ext-enable imagick opcache redis soap; \
+	docker-php-ext-enable imagick opcache redis; \
 	\
 	runDeps="$( \
 		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local/lib/php/extensions \
@@ -56,6 +56,26 @@ RUN set -ex; \
 		)"; \
 	apk add --virtual .roundcubemail-phpext-rundeps imagemagick $runDeps; \
 	apk del .build-deps
+
+RUN set -ex; \
+	\
+	mkdir -p /usr/src/php/ext/memcached \
+	; \
+	cd /usr/src/php/ext/memcached \
+	; \
+	apk add \
+		$PHPIZE_DEPS \ 
+		libmemcached-dev lzlib-dev zlib-dev libzip-dev \
+	; \
+	wget https://github.com/php-memcached-dev/php-memcached/archive/v3.2.0.zip; \
+	unzip /usr/src/php/ext/memcached/v3.2.0.zip \
+	; \
+	mv /usr/src/php/ext/memcached/php-memcached-3.2.0/* /usr/src/php/ext/memcached/ \
+	; \
+	docker-php-ext-configure memcached; \
+	docker-php-ext-install memcached
+
+WORKDIR /
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
