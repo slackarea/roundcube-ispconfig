@@ -75,10 +75,7 @@ RUN set -ex; \
 	docker-php-ext-configure memcached; \
 	docker-php-ext-install memcached
 
-WORKDIR /
-
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
 
 # Define Roundcubemail version
 ENV ROUNDCUBEMAIL_VERSION=1.6.7
@@ -104,17 +101,17 @@ RUN set -ex; \
 	rm /tmp/pubkey.asc; \
 	gpg --batch --verify roundcubemail.tar.gz.asc roundcubemail.tar.gz; \
 	gpgconf --kill all; \
-	mkdir /usr/src/roundcubemail; \
-	tar -xf roundcubemail.tar.gz -C /usr/src/roundcubemail --strip-components=1 --no-same-owner; \
+	mkdir -p /var/www/html; \
+	tar -xf roundcubemail.tar.gz -C /var/www/html --strip-components=1 --no-same-owner; \
 	rm -r "$GNUPGHOME" roundcubemail.tar.gz.asc roundcubemail.tar.gz; \
-	rm -rf /usr/src/roundcubemail/installer; \
-	chown -R www-data:www-data /usr/src/roundcubemail/logs; \
+	rm -rf /var/www/html/installer; \
+	chown -R www-data:www-data /var/www/html/logs; \
 	apk del .fetch-deps
 
 # ISPconfig 1.0.0
 RUN curl -fSL https://github.com/w2c/ispconfig3_roundcube/archive/refs/tags/1.0.0.tar.gz -o /tmp/1.0.0.tar.gz
 RUN tar -xf /tmp/1.0.0.tar.gz -C /tmp/
-RUN mv /tmp/ispconfig3_roundcube-1.0.0/ispconfig3_* /usr/src/roundcubemail/plugins/
+RUN mv /tmp/ispconfig3_roundcube-1.0.0/ispconfig3_* /var/www/html/plugins/
 RUN rm -rf /tmp/ispconfig3_roundcube-1.0.0 /tmp/1.0.0.tar.gz
 
 # include the wait-for-it.sh script
@@ -125,7 +122,9 @@ COPY php.ini /usr/local/etc/php/conf.d/roundcube-defaults.ini
 
 COPY --chmod=0755 docker-entrypoint.sh /
 
-RUN mkdir -p /var/roundcube/config
+# RUN mkdir -p /var/roundcube/config
+
+WORKDIR /var/www/html
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["php-fpm"]
