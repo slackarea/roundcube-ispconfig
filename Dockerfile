@@ -67,10 +67,10 @@ RUN set -ex; \
 		$PHPIZE_DEPS \ 
 		libmemcached-dev lzlib-dev zlib-dev libzip-dev \
 	; \
-	wget https://github.com/php-memcached-dev/php-memcached/archive/v3.2.0.zip; \
-	unzip /usr/src/php/ext/memcached/v3.2.0.zip \
+	wget https://github.com/php-memcached-dev/php-memcached/archive/v3.3.0.zip; \
+	unzip /usr/src/php/ext/memcached/v3.3.0.zip \
 	; \
-	mv /usr/src/php/ext/memcached/php-memcached-3.2.0/* /usr/src/php/ext/memcached/ \
+	mv /usr/src/php/ext/memcached/php-memcached-3.3.0/* /usr/src/php/ext/memcached/ \
 	; \
 	docker-php-ext-configure memcached; \
 	docker-php-ext-install memcached
@@ -78,7 +78,7 @@ RUN set -ex; \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Define Roundcubemail version
-ENV ROUNDCUBEMAIL_VERSION=1.6.9
+ENV ROUNDCUBEMAIL_VERSION=1.6.10
 
 # Define the GPG key used for the bundle verification process
 ENV ROUNDCUBEMAIL_KEYID="F3E4 C04B B3DB 5D42 15C4  5F7F 5AB2 BAA1 41C4 F7D5"
