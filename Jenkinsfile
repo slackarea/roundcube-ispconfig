@@ -1,7 +1,9 @@
 pipeline {
-    agent any
-    tools {
-        dockerTool "docker"
+    agent {
+        docker {
+            image 'pdmlab/jenkins-node-docker-agent:6.11.1'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
     }
     // parameters {
     //     string(name: 'build_version', defaultValue: 'V1.6.10', description: 'Build version to use for Docker image')
@@ -25,7 +27,7 @@ pipeline {
             environment {
                 // DOCKER_IMAGE = "vcnngr/demo-java-app:${build_version}"
                 REGISTRY_CREDENTIALS = credentials('dockerhub')
-                PATH="${tool 'docker'}/bin:${env.PATH}"
+                // PATH="${tool 'docker'}/bin:${env.PATH}"
             }   
             steps {
                 script {
