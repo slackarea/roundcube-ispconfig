@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'pdmlab/jenkins-node-docker-agent:6.11.1'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent docker
     // parameters {
     //     string(name: 'build_version', defaultValue: 'V1.6.10', description: 'Build version to use for Docker image')
     // }
