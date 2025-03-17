@@ -24,7 +24,7 @@ pipeline {
                     docker.withRegistry('https://registry.hub.docker.com', DOCKER_REGISTRY_CREDENTIALS) {
                         // Build and push Docker image
                         def app = docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
-                        app.push()
+                        // app.push()
                     }
                 }
             }
