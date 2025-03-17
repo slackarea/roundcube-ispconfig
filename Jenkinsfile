@@ -22,12 +22,17 @@ pipeline {
             }
         }
         stage('Build Docker Image') {
+            environment {
+                // DOCKER_IMAGE = "vcnngr/demo-java-app:${build_version}"
+                REGISTRY_CREDENTIALS = credentials('dockerhub')
+                PATH="${tool 'docker'}/bin:${env.PATH}"
+            }   
             steps {
                 script {
-                    docker.withRegistry('https://registry.hub.docker.com', DOCKER_REGISTRY_CREDENTIALS) {
-                        // Build and push Docker image
-                        def app = docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
-                        // app.push()
+                    sh 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
+                    def dockerImage = docker.image("${DOCKER_IMAGE}")
+                    docker.withRegistry('https://index.docker.io/v1/', "dockerhub") {
+                        dockerImage.push()
                     }
                 }
             }
