@@ -1,7 +1,7 @@
 pipeline {
     agent any
     tools {
-        docker "docker"
+        dockerTool "docker"
     }
     // parameters {
     //     string(name: 'build_version', defaultValue: 'V1.6.10', description: 'Build version to use for Docker image')
