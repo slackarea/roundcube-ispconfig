@@ -1,12 +1,16 @@
 pipeline {
     agent any
+    parameters {
+        string(name: 'build_version', defaultValue: 'V1.6.10', description: 'Build version to use for Docker image')
+    }
     environment {
         // Docker & Helm Registry Credentials
         DOCKER_IMAGE = 'vcnngr/roundcube-ispconfig'
-        DOCKER_TAG = 'v1.6.10'
+        DOCKER_TAG = ${build_version}
         DOCKER_REGISTRY_CREDENTIALS = 'dockerhub'
         HELM_CHART_NAME = 'roundcube-ispconfig'
     }
+
     stages {
         stage('Checkout Code') {
             steps {
