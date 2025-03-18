@@ -28,8 +28,10 @@ pipeline {
                 script {
                     sh 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
                     def dockerImage = docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}")
+                    def dockerLatest = docker.image("${DOCKER_IMAGE}:latest")
                     docker.withRegistry('https://index.docker.io/v1/', "dockerhub") {
                         dockerImage.push()
+                        dockerLatest.push()
                     }
                 }
             }
