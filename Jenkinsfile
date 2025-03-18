@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'docker' }
+    agent { label 'docker-agent' }
     // parameters {
     //     string(name: 'build_version', defaultValue: 'V1.6.10', description: 'Build version to use for Docker image')
     // }
@@ -27,7 +27,7 @@ pipeline {
             steps {
                 script {
                     sh 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
-                    def dockerImage = docker.image("${DOCKER_IMAGE}")
+                    def dockerImage = docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}")
                     docker.withRegistry('https://index.docker.io/v1/', "dockerhub") {
                         dockerImage.push()
                     }
