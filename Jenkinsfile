@@ -26,10 +26,7 @@ pipeline {
             }   
             steps {
                 script {
-                    dockerImage= docker.build("${DOCKER_IMAGE}")
-                    // sh 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} -t ${DOCKER_IMAGE}:latest .'
-                    // def dockerImage = docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}")
-                    // def dockerLatest = docker.image("${DOCKER_IMAGE}:latest")
+                    def dockerImage= docker.build("${DOCKER_IMAGE}")
                     docker.withRegistry('https://index.docker.io/v1/', "dockerhub") {
                         dockerImage.push("${DOCKER_TAG}")
                         dockerImage.push("latest")
