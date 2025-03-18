@@ -32,6 +32,8 @@ pipeline {
                     def dockerLatest = docker.image("${DOCKER_IMAGE}:latest")
                     docker.withRegistry('https://index.docker.io/v1/', "dockerhub") {
                         dockerImage().push()
+                    }
+                    docker.withRegistry('https://index.docker.io/v1/', "dockerhub") {
                         dockerLatest().push()
                     }
                 }
