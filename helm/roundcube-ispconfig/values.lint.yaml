@@ -1,0 +1,13 @@
+
+ingress:
+  host: localhost
+
+imap:
+  host: localhost
+
+smtp:
+  host: localhost
+
+externalDatabase:
+  type: pgsql
+  host: localhost

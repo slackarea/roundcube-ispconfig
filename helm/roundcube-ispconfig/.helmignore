@@ -1,0 +1,14 @@
+# Patterns to ignore when building packages.
+.DS_Store
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+.git/
+.gitignore
+.gitlab/
+.gitlab-ci.yml
+*.md
+!README.md
+values.lint.yaml

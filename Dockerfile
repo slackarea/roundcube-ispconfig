@@ -1,6 +1,9 @@
 FROM php:8.2-fpm-alpine
 LABEL maintainer="Vincenzo Ingrosso <vincenzo@ingrosso.net>"
 
+# Build argument for version (can be overridden at build time)
+ARG ROUNDCUBE_VERSION=1.6.10
+
 # entrypoint.sh and installto.sh dependencies
 RUN set -ex; \
 	\
@@ -77,8 +80,8 @@ RUN set -ex; \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Define Roundcubemail version
-ENV ROUNDCUBEMAIL_VERSION=1.6.10
+# Define Roundcubemail version from build arg
+ENV ROUNDCUBEMAIL_VERSION=${ROUNDCUBE_VERSION}
 
 # Define the GPG key used for the bundle verification process
 ENV ROUNDCUBEMAIL_KEYID="F3E4 C04B B3DB 5D42 15C4  5F7F 5AB2 BAA1 41C4 F7D5"
@@ -123,6 +126,13 @@ COPY php.ini /usr/local/etc/php/conf.d/roundcube-defaults.ini
 COPY --chmod=0755 docker-entrypoint.sh /
 
 RUN mkdir -p /var/roundcube/config
+
+# OCI Labels
+LABEL org.opencontainers.image.title="Roundcube ISPConfig" \
+      org.opencontainers.image.description="Roundcube Webmail with ISPConfig plugins" \
+      org.opencontainers.image.version="${ROUNDCUBE_VERSION}" \
+      org.opencontainers.image.vendor="VCNNGR" \
+      org.opencontainers.image.source="https://github.com/slackarea/roundcube-ispconfig"
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["php-fpm"]
