@@ -1,0 +1,39 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+*.orig
+
+# Helm
+helm/*/charts/
+*.tgz
+*.prov
+
+# Build artifacts
+security-reports/
+*.log
+
+# Secrets (never commit!)
+*.key
+*.pem
+*.crt
+secrets/
+.env
+.env.*
+
+# Temporary
+tmp/
+temp/
