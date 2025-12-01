@@ -72,7 +72,6 @@ spec:
     environment {
         // Docker configuration
         DOCKER_IMAGE = 'vcnngr/roundcube-ispconfig'
-        DOCKER_TAG = "v${params.ROUNDCUBE_VERSION}"
         
         // Helm configuration
         HELM_CHART_NAME = 'roundcube-ispconfig'
@@ -127,14 +126,17 @@ spec:
                 sh "mkdir -p ${REPORTS_DIR}"
                 
                 script {
+                    // Set version variables from parameters
+                    env.DOCKER_TAG = "v${params.ROUNDCUBE_VERSION}"
                     env.FINAL_CHART_VERSION = params.CHART_VERSION?.trim() ?: params.ROUNDCUBE_VERSION
+                    env.ROUNDCUBE_VERSION = params.ROUNDCUBE_VERSION
                     
                     echo """
 ╔══════════════════════════════════════════════════════════════╗
 ║           ROUNDCUBE-ISPCONFIG BUILD                          ║
 ╠══════════════════════════════════════════════════════════════╣
-║  Roundcube Version: ${params.ROUNDCUBE_VERSION}
-║  Docker Tag:        ${DOCKER_TAG}
+║  Roundcube Version: ${env.ROUNDCUBE_VERSION}
+║  Docker Tag:        ${env.DOCKER_TAG}
 ║  Chart Version:     ${env.FINAL_CHART_VERSION}
 ║  Skip Docker:       ${params.SKIP_DOCKER_BUILD}
 ║  Skip Security:     ${params.SKIP_SECURITY_SCANS}
@@ -223,7 +225,7 @@ spec:
                             --label org.opencontainers.image.source=https://github.com/slackarea/roundcube-ispconfig \
                             --no-cache \
                             --pull \
-                            -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
+                            -t ${DOCKER_IMAGE}:${env.DOCKER_TAG} \
                             -t ${DOCKER_IMAGE}:latest \
                             .
                         
@@ -253,7 +255,7 @@ spec:
                         trivy image \
                             --severity LOW,MEDIUM,HIGH,CRITICAL \
                             --format table \
-                            ${DOCKER_IMAGE}:${DOCKER_TAG} 2>&1 | tee -a ${REPORTS_DIR}/trivy-report.txt || true
+                            ${DOCKER_IMAGE}:${env.DOCKER_TAG} 2>&1 | tee -a ${REPORTS_DIR}/trivy-report.txt || true
                         
                         echo ""
                         echo "=== Generating JSON report ==="
@@ -261,7 +263,7 @@ spec:
                             --severity HIGH,CRITICAL \
                             --format json \
                             --output ${REPORTS_DIR}/trivy-report.json \
-                            ${DOCKER_IMAGE}:${DOCKER_TAG} || true
+                            ${DOCKER_IMAGE}:${env.DOCKER_TAG} || true
                     """
                 }
             }
@@ -298,12 +300,12 @@ spec:
                         trivy image \
                             --format spdx-json \
                             --output ${REPORTS_DIR}/sbom-spdx.json \
-                            ${DOCKER_IMAGE}:${DOCKER_TAG} || true
+                            ${DOCKER_IMAGE}:${env.DOCKER_TAG} || true
                         
                         trivy image \
                             --format cyclonedx \
                             --output ${REPORTS_DIR}/sbom-cyclonedx.json \
-                            ${DOCKER_IMAGE}:${DOCKER_TAG} || true
+                            ${DOCKER_IMAGE}:${env.DOCKER_TAG} || true
                         
                         echo "SBOM generated: sbom-spdx.json, sbom-cyclonedx.json"
                     """
@@ -325,8 +327,8 @@ spec:
                         echo "=== Logging in to DockerHub ==="
                         echo "\${DOCKERHUB_PSW}" | docker login -u "\${DOCKERHUB_USR}" --password-stdin
                         
-                        echo "=== Pushing ${DOCKER_IMAGE}:${DOCKER_TAG} ==="
-                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        echo "=== Pushing ${DOCKER_IMAGE}:${env.DOCKER_TAG} ==="
+                        docker push ${DOCKER_IMAGE}:${env.DOCKER_TAG}
                         
                         echo "=== Pushing ${DOCKER_IMAGE}:latest ==="
                         docker push ${DOCKER_IMAGE}:latest
@@ -351,8 +353,8 @@ spec:
                         cp Chart.yaml Chart.yaml.bak
                         
                         # Aggiorna Chart.yaml - version e appVersion
-                        sed -i 's/^version:.*/version: ${FINAL_CHART_VERSION}/' Chart.yaml
-                        sed -i 's/^appVersion:.*/appVersion: "${DOCKER_TAG}"/' Chart.yaml
+                        sed -i 's/^version:.*/version: ${env.FINAL_CHART_VERSION}/' Chart.yaml
+                        sed -i 's/^appVersion:.*/appVersion: "${env.DOCKER_TAG}"/' Chart.yaml
                         
                         echo "=== Updated Chart.yaml ==="
                         cat Chart.yaml
@@ -450,10 +452,10 @@ spec:
                             git config user.name "Jenkins CI"
                             
                             git add .
-                            git commit -m "Release ${HELM_CHART_NAME}-${FINAL_CHART_VERSION}
+                            git commit -m "Release ${HELM_CHART_NAME}-${env.FINAL_CHART_VERSION}
 
-Docker Image: ${DOCKER_IMAGE}:${DOCKER_TAG}
-Roundcube Version: ${ROUNDCUBE_VERSION}
+Docker Image: ${DOCKER_IMAGE}:${env.DOCKER_TAG}
+Roundcube Version: ${env.ROUNDCUBE_VERSION}
 Build: ${BUILD_NUMBER}" || echo "Nothing to commit"
                             
                             git push origin main
@@ -498,6 +500,13 @@ Build: ${BUILD_NUMBER}" || echo "Nothing to commit"
                 archiveArtifacts artifacts: "${REPORTS_DIR}/**/*", allowEmptyArchive: true
             }
         }
+        
+        stage('Cleanup') {
+            steps {
+                sh 'rm -rf charts-repo helm/packages || true'
+                echo '🧹 Cleanup completed'
+            }
+        }
     }
     
     post {
@@ -506,8 +515,8 @@ Build: ${BUILD_NUMBER}" || echo "Nothing to commit"
 ╔══════════════════════════════════════════════════════════════╗
 ║                    ✅ BUILD SUCCESSFUL                       ║
 ╠══════════════════════════════════════════════════════════════╣
-║  Docker Image: ${DOCKER_IMAGE}:${DOCKER_TAG}
-║  Helm Chart:   ${HELM_CHART_NAME}-${FINAL_CHART_VERSION}
+║  Docker Image: ${DOCKER_IMAGE}:${env.DOCKER_TAG}
+║  Helm Chart:   ${HELM_CHART_NAME}-${env.FINAL_CHART_VERSION}
 ║  Charts Repo:  https://slackarea.github.io/charts
 ║                                                              ║
 ║  Usage:                                                      ║
@@ -524,7 +533,9 @@ Build: ${BUILD_NUMBER}" || echo "Nothing to commit"
             echo '⚠️ Build completed with warnings (security issues found)'
         }
         cleanup {
-            sh 'rm -rf charts-repo helm/packages || true'
+            // Cleanup is handled in the last stage, not here
+            // (sh commands require node context)
+            echo 'Pipeline finished.'
         }
     }
 }
