@@ -3,11 +3,11 @@
 apiVersion: "acid.zalan.do/v1"
 kind: postgresql
 metadata:
-  name: {{ include "common.names.fullname" . }}-db
+  name: {{ include "roundcube.fullname" . }}-db
   labels:
     {{- include "common.labels.standard" . | nindent 4 }}
 spec:
-  teamId: "{{ include "common.names.fullname" . }}"
+  teamId: "{{ include "roundcube.fullname" . }}"
   volume:
     size: "{{ .Values.database.volumeSize }}"
     storageClass: "{{ .Values.database.storageClassName }}"

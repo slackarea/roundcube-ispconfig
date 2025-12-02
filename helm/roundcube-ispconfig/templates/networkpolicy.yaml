@@ -3,7 +3,7 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ include "common.names.fullname" . }}
+  name: {{ include "roundcube.fullname" . }}
   labels:
     {{- include "common.labels.standard" . | nindent 4 }}
     {{- if .Values.networkPolicy.additionalLabels }}

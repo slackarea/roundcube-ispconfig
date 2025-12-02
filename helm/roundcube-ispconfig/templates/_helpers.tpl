@@ -1,3 +1,26 @@
+{{/*
+Create a default fully qualified app name.
+Replaces bitnami common.names.fullname
+*/}}
+{{- define "roundcube.fullname" -}}
+{{- if .Values.fullnameOverride -}}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- if contains $name .Release.Name -}}
+{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "roundcube.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 
 {{- define "roundcube.encryption" -}}
 {{- if not (has . (list "none" "starttls" "ssltls")) -}}
@@ -9,7 +32,6 @@ ssl://
 {{- end -}}
 {{- end -}}
 
-# inspired by https://stackoverflow.com/a/67523275/2400785
 {{- define "roundcube.desKey" -}}
 {{- if .Values.config.desKey }}
 {{- .Values.config.desKey -}}
@@ -76,7 +98,6 @@ ssl://
 {{- $pluginList | join " " -}}
 {{- end -}}
 
-
 {{- define "roundcube.deployment.command" -}}
 (cd /usr/src/roundcubemail && composer require roundcube/plugin-installer>=0.3.5) &&
 {{- if (include "roundcube.plugins.requirements" .) -}}
@@ -87,7 +108,6 @@ ssl://
 {{- end -}}
 /docker-entrypoint.sh php-fpm
 {{- end -}}
-
 
 {{- define "roundcube.helm2php" -}}
 {{- $kind := kindOf . -}}

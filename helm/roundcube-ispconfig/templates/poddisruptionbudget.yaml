@@ -3,7 +3,7 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "common.names.fullname" . }}
+  name: {{ include "roundcube.fullname" . }}
   labels:
     {{- include "common.labels.standard" . | nindent 4 }}
     {{- if .Values.pdb.additionalLabels }}
