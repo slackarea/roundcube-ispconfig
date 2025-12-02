@@ -122,18 +122,14 @@ spec:
             steps {
                 container('helm') {
                     sh '''
-                        echo "=== PWD ==="
-                        pwd
-                        echo "=== Full workspace listing ==="
-                        ls -laR . | head -100
-                        echo "=== Trying absolute path ==="
                         WORKSPACE=$(pwd)
-                        echo "Workspace: ${WORKSPACE}"
-                        ls -la ${WORKSPACE}/helm/roundcube-ispconfig/ || echo "Not found with absolute path"
-                        echo "=== Chart.yaml content ==="
-                        cat ${WORKSPACE}/helm/roundcube-ispconfig/Chart.yaml || echo "Cannot read Chart.yaml"
-                        echo "=== Running helm lint with absolute path ==="
-                        helm lint ${WORKSPACE}/helm/roundcube-ispconfig || true
+                        cd ${WORKSPACE}/helm/roundcube-ispconfig
+                        echo "=== Downloading dependencies ==="
+                        helm dependency update .
+                        echo "=== Charts folder after dep update ==="
+                        ls -la charts/ || echo "No charts folder"
+                        echo "=== Running helm lint ==="
+                        helm lint .
                     '''
                 }
             }
