@@ -103,17 +103,7 @@ spec:
                     env.CHART_VER = params.CHART_VERSION?.trim() ?: params.ROUNDCUBE_VERSION
                     env.RC_VERSION = params.ROUNDCUBE_VERSION
                 }
-                sh '''
-                    mkdir -p ${REPORTS_DIR}
-                    echo "=== Workspace contents ==="
-                    ls -la
-                    echo "=== Helm directory ==="
-                    ls -la helm/ || echo "helm/ not found"
-                    echo "=== Helm chart directory ==="
-                    ls -la helm/roundcube-ispconfig/ || echo "helm/roundcube-ispconfig/ not found"
-                    echo "=== Chart.yaml ==="
-                    cat helm/roundcube-ispconfig/Chart.yaml || echo "Chart.yaml not found"
-                '''
+                sh 'mkdir -p security-reports'
                 echo "Roundcube: ${env.RC_VERSION} | Docker: ${env.DOCKER_TAG} | Chart: ${env.CHART_VER}"
             }
         }
@@ -122,14 +112,8 @@ spec:
             steps {
                 container('helm') {
                     sh '''
-                        echo "=== Debug ==="
-                        pwd
-                        ls -la /home/jenkins/agent/workspace/roundcube-ispconfig/helm/roundcube-ispconfig/
-                        cat /home/jenkins/agent/workspace/roundcube-ispconfig/helm/roundcube-ispconfig/Chart.yaml
-                        echo "=== Helm version ==="
-                        helm version
-                        echo "=== Running helm lint with full path ==="
-                        helm lint /home/jenkins/agent/workspace/roundcube-ispconfig/helm/roundcube-ispconfig || echo "Lint warnings/errors (non-blocking)"
+                        CHART_PATH="/home/jenkins/agent/workspace/roundcube-ispconfig/helm/roundcube-ispconfig"
+                        helm lint ${CHART_PATH} || echo "Lint warnings (non-blocking)"
                     '''
                 }
             }
@@ -140,7 +124,6 @@ spec:
             steps {
                 container('docker-cli') {
                     sh '''
-                        echo "=== Building Docker Image ==="
                         docker build \
                             --build-arg ROUNDCUBE_VERSION=${RC_VERSION} \
                             -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
@@ -187,11 +170,9 @@ spec:
                 container('helm') {
                     sh '''
                         CHART_PATH="/home/jenkins/agent/workspace/roundcube-ispconfig/helm/roundcube-ispconfig"
-                        echo "=== Current Chart.yaml ==="
-                        cat ${CHART_PATH}/Chart.yaml
                         sed -i "s/^version:.*/version: ${CHART_VER}/" ${CHART_PATH}/Chart.yaml
                         sed -i "s/^appVersion:.*/appVersion: \\"${DOCKER_TAG}\\"/" ${CHART_PATH}/Chart.yaml
-                        echo "=== Updated Chart.yaml ==="
+                        echo "Updated Chart.yaml:"
                         cat ${CHART_PATH}/Chart.yaml
                     '''
                 }
@@ -209,11 +190,20 @@ spec:
                             apk add --no-cache gnupg
                             export GNUPGHOME=$(mktemp -d)
                             chmod 700 ${GNUPGHOME}
+                            
+                            # Import key in batch mode
                             gpg --batch --import ${GPG_KEY}
-                            gpg --export-secret-keys > ${GNUPGHOME}/secring.gpg
+                            
+                            # Export with loopback pinentry (no TTY needed)
+                            echo "${GPG_PASS}" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --export-secret-keys > ${GNUPGHOME}/secring.gpg
+                            
+                            # Verify export worked
+                            ls -la ${GNUPGHOME}/secring.gpg
+                            
                             CHART_PATH="/home/jenkins/agent/workspace/roundcube-ispconfig/helm/roundcube-ispconfig"
                             PKG_PATH="/home/jenkins/agent/workspace/roundcube-ispconfig/helm/packages"
                             mkdir -p ${PKG_PATH}
+                            
                             echo "${GPG_PASS}" > /tmp/pass
                             helm package ${CHART_PATH} \
                                 --sign \
