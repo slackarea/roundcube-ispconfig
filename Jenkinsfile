@@ -124,10 +124,16 @@ spec:
                     sh '''
                         echo "=== PWD ==="
                         pwd
-                        echo "=== List helm dir ==="
-                        ls -la helm/roundcube-ispconfig/ || echo "Directory not found"
-                        echo "=== Running helm lint ==="
-                        helm lint ${HELM_CHART_PATH} || true
+                        echo "=== Full workspace listing ==="
+                        ls -laR . | head -100
+                        echo "=== Trying absolute path ==="
+                        WORKSPACE=$(pwd)
+                        echo "Workspace: ${WORKSPACE}"
+                        ls -la ${WORKSPACE}/helm/roundcube-ispconfig/ || echo "Not found with absolute path"
+                        echo "=== Chart.yaml content ==="
+                        cat ${WORKSPACE}/helm/roundcube-ispconfig/Chart.yaml || echo "Cannot read Chart.yaml"
+                        echo "=== Running helm lint with absolute path ==="
+                        helm lint ${WORKSPACE}/helm/roundcube-ispconfig || true
                     '''
                 }
             }
@@ -168,7 +174,7 @@ spec:
             when { expression { return !params.SKIP_DOCKER_BUILD } }
             steps {
                 container('docker-cli') {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh '''
                             echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
                             docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
@@ -184,7 +190,8 @@ spec:
             steps {
                 container('helm') {
                     sh '''
-                        cd ${HELM_CHART_PATH}
+                        WORKSPACE=$(pwd)
+                        cd ${WORKSPACE}/helm/roundcube-ispconfig
                         echo "=== Current Chart.yaml ==="
                         cat Chart.yaml
                         sed -i "s/^version:.*/version: ${CHART_VER}/" Chart.yaml
@@ -210,9 +217,10 @@ spec:
                             chmod 700 ${GNUPGHOME}
                             gpg --batch --import ${GPG_KEY}
                             gpg --export-secret-keys > ${GNUPGHOME}/secring.gpg
-                            mkdir -p helm/packages
+                            WORKSPACE=$(pwd)
+                            mkdir -p ${WORKSPACE}/helm/packages
                             echo "${GPG_PASS}" > /tmp/pass
-                            cd helm
+                            cd ${WORKSPACE}/helm
                             helm package roundcube-ispconfig \
                                 --sign \
                                 --key "VCNNGR Helm Signing" \
@@ -233,10 +241,11 @@ spec:
                     withCredentials([string(credentialsId: 'github-token', variable: 'GH_TOKEN')]) {
                         sh '''
                             apk add --no-cache git
-                            git clone https://${GH_TOKEN}@github.com/${CHARTS_REPO}.git charts-repo
-                            cp helm/packages/*.tgz charts-repo/
-                            cp helm/packages/*.prov charts-repo/
-                            cd charts-repo
+                            WORKSPACE=$(pwd)
+                            git clone https://${GH_TOKEN}@github.com/${CHARTS_REPO}.git ${WORKSPACE}/charts-repo
+                            cp ${WORKSPACE}/helm/packages/*.tgz ${WORKSPACE}/charts-repo/
+                            cp ${WORKSPACE}/helm/packages/*.prov ${WORKSPACE}/charts-repo/
+                            cd ${WORKSPACE}/charts-repo
                             git config user.email "jenkins@vcnngr.com"
                             git config user.name "Jenkins"
                             git add .
@@ -249,7 +258,8 @@ spec:
                     withCredentials([string(credentialsId: 'github-token', variable: 'GH_TOKEN')]) {
                         sh '''
                             apk add --no-cache git
-                            cd charts-repo
+                            WORKSPACE=$(pwd)
+                            cd ${WORKSPACE}/charts-repo
                             helm repo index . --url https://slackarea.github.io/charts --merge index.yaml || helm repo index . --url https://slackarea.github.io/charts
                             git add index.yaml
                             git commit -m "Update index" || true
