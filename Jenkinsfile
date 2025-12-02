@@ -1,6 +1,5 @@
 // VCNNGR Roundcube-ISPConfig Pipeline
-// Build Docker image + Helm chart signed + publish
-// Uses Docker-in-Docker (DinD) - no host socket required
+// Uses Docker-in-Docker (DinD)
 
 pipeline {
     agent {
@@ -87,13 +86,10 @@ spec:
                         for i in $(seq 1 30); do
                             if docker info > /dev/null 2>&1; then
                                 echo "Docker is ready"
-                                docker version
                                 exit 0
                             fi
-                            echo "Waiting... ($i/30)"
                             sleep 2
                         done
-                        echo "Docker failed to start"
                         exit 1
                     '''
                 }
@@ -107,7 +103,17 @@ spec:
                     env.CHART_VER = params.CHART_VERSION?.trim() ?: params.ROUNDCUBE_VERSION
                     env.RC_VERSION = params.ROUNDCUBE_VERSION
                 }
-                sh "mkdir -p ${REPORTS_DIR}"
+                sh '''
+                    mkdir -p ${REPORTS_DIR}
+                    echo "=== Workspace contents ==="
+                    ls -la
+                    echo "=== Helm directory ==="
+                    ls -la helm/ || echo "helm/ not found"
+                    echo "=== Helm chart directory ==="
+                    ls -la helm/roundcube-ispconfig/ || echo "helm/roundcube-ispconfig/ not found"
+                    echo "=== Chart.yaml ==="
+                    cat helm/roundcube-ispconfig/Chart.yaml || echo "Chart.yaml not found"
+                '''
                 echo "Roundcube: ${env.RC_VERSION} | Docker: ${env.DOCKER_TAG} | Chart: ${env.CHART_VER}"
             }
         }
@@ -115,7 +121,14 @@ spec:
         stage('Helm Lint') {
             steps {
                 container('helm') {
-                    sh 'helm lint ${HELM_CHART_PATH} || true'
+                    sh '''
+                        echo "=== PWD ==="
+                        pwd
+                        echo "=== List helm dir ==="
+                        ls -la helm/roundcube-ispconfig/ || echo "Directory not found"
+                        echo "=== Running helm lint ==="
+                        helm lint ${HELM_CHART_PATH} || true
+                    '''
                 }
             }
         }
@@ -125,6 +138,7 @@ spec:
             steps {
                 container('docker-cli') {
                     sh '''
+                        echo "=== Building Docker Image ==="
                         docker build \
                             --build-arg ROUNDCUBE_VERSION=${RC_VERSION} \
                             -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
@@ -154,11 +168,12 @@ spec:
             when { expression { return !params.SKIP_DOCKER_BUILD } }
             steps {
                 container('docker-cli') {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'U', passwordVariable: 'P')]) {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh '''
-                            echo "${P}" | docker login -u "${U}" --password-stdin
+                            echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
                             docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
                             docker push ${DOCKER_IMAGE}:latest
+                            echo "Pushed to DockerHub"
                         '''
                     }
                 }
@@ -170,8 +185,11 @@ spec:
                 container('helm') {
                     sh '''
                         cd ${HELM_CHART_PATH}
+                        echo "=== Current Chart.yaml ==="
+                        cat Chart.yaml
                         sed -i "s/^version:.*/version: ${CHART_VER}/" Chart.yaml
                         sed -i "s/^appVersion:.*/appVersion: \\"${DOCKER_TAG}\\"/" Chart.yaml
+                        echo "=== Updated Chart.yaml ==="
                         cat Chart.yaml
                         helm dependency update .
                     '''
