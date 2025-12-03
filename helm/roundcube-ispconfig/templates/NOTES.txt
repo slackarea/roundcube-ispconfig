@@ -1,6 +1,6 @@
 
 Congratulations!
-Your {{ include "common.names.fullname" . }} instance has successfully been installed!
+Your {{ include "roundcube.fullname" . }} instance has successfully been installed!
 
 You can access roundcube now at
 

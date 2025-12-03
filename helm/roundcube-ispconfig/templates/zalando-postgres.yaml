@@ -5,7 +5,7 @@ kind: postgresql
 metadata:
   name: {{ include "roundcube.fullname" . }}-db
   labels:
-    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- include "roundcube.labels.standard" . | nindent 4 }}
 spec:
   teamId: "{{ include "roundcube.fullname" . }}"
   volume:

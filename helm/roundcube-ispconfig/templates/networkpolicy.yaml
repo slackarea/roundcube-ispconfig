@@ -5,18 +5,18 @@ kind: NetworkPolicy
 metadata:
   name: {{ include "roundcube.fullname" . }}
   labels:
-    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- include "roundcube.labels.standard" . | nindent 4 }}
     {{- if .Values.networkPolicy.additionalLabels }}
-    {{- include "common.tplvalues.render" ( dict "value" .Values.networkPolicy.additionalLabels "context" $) | nindent 4 }}
+    {{- include "roundcube.tplvalues.render" ( dict "value" .Values.networkPolicy.additionalLabels "context" $) | nindent 4 }}
     {{- end }}
   annotations:
     {{- if .Values.networkPolicy.additionalAnnotations }}
-    {{- include "common.tplvalues.render" ( dict "value" .Values.networkPolicy.additionalAnnotations "context" $) | nindent 4 }}
+    {{- include "roundcube.tplvalues.render" ( dict "value" .Values.networkPolicy.additionalAnnotations "context" $) | nindent 4 }}
     {{- end }}
 spec:
   podSelector:
     matchLabels:
-      {{- include "common.labels.matchLabels" . | nindent 6 }}
+      {{- include "roundcube.labels.matchLabels" . | nindent 6 }}
   policyTypes:
     - Egress
   egress:

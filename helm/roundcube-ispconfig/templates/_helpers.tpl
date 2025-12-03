@@ -2,21 +2,29 @@
 Expand the name of the chart.
 */}}
 {{- define "roundcube.name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- $ctx := . -}}
+{{- if .context -}}
+{{- $ctx = .context -}}
+{{- end -}}
+{{- default $ctx.Chart.Name $ctx.Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Create a default fully qualified app name.
 */}}
 {{- define "roundcube.fullname" -}}
-{{- if .Values.fullnameOverride -}}
-{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- $ctx := . -}}
+{{- if .context -}}
+{{- $ctx = .context -}}
+{{- end -}}
+{{- if $ctx.Values.fullnameOverride -}}
+{{- $ctx.Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- $name := default .Chart.Name .Values.nameOverride -}}
-{{- if contains $name .Release.Name -}}
-{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- $name := default $ctx.Chart.Name $ctx.Values.nameOverride -}}
+{{- if contains $name $ctx.Release.Name -}}
+{{- $ctx.Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-%s" $ctx.Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -25,27 +33,44 @@ Create a default fully qualified app name.
 Create chart name and version as used by the chart label.
 */}}
 {{- define "roundcube.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- $ctx := . -}}
+{{- if .context -}}
+{{- $ctx = .context -}}
+{{- end -}}
+{{- printf "%s-%s" $ctx.Chart.Name $ctx.Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Common labels (replaces common.labels.standard)
+Usage: {{ include "roundcube.labels.standard" . }}
+   or: {{ include "roundcube.labels.standard" (dict "context" $ "customLabels" .Values.commonLabels) }}
 */}}
 {{- define "roundcube.labels.standard" -}}
-helm.sh/chart: {{ include "roundcube.chart" . }}
-{{ include "roundcube.labels.matchLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- $ctx := . -}}
+{{- if .context -}}
+{{- $ctx = .context -}}
+{{- end -}}
+helm.sh/chart: {{ include "roundcube.chart" $ctx }}
+{{ include "roundcube.labels.matchLabels" $ctx }}
+{{- if $ctx.Chart.AppVersion }}
+app.kubernetes.io/version: {{ $ctx.Chart.AppVersion | quote }}
 {{- end }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/managed-by: {{ $ctx.Release.Service }}
+{{- if .customLabels }}
+{{ include "roundcube.tplvalues.render" (dict "value" .customLabels "context" $ctx) }}
+{{- end -}}
 {{- end -}}
 
 {{/*
 Selector labels (replaces common.labels.matchLabels)
 */}}
 {{- define "roundcube.labels.matchLabels" -}}
-app.kubernetes.io/name: {{ include "roundcube.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+{{- $ctx := . -}}
+{{- if .context -}}
+{{- $ctx = .context -}}
+{{- end -}}
+app.kubernetes.io/name: {{ include "roundcube.name" $ctx }}
+app.kubernetes.io/instance: {{ $ctx.Release.Name }}
 {{- end -}}
 
 {{/*
@@ -86,7 +111,7 @@ preferredDuringSchedulingIgnoredDuringExecution:
   - weight: 1
     podAffinityTerm:
       labelSelector:
-        matchLabels: {{- include "roundcube.labels.matchLabels" .context | nindent 10 }}
+        matchLabels: {{- include "roundcube.labels.matchLabels" (dict "context" .context) | nindent 10 }}
       topologyKey: kubernetes.io/hostname
 {{- end -}}
 
@@ -96,7 +121,7 @@ Return a hard podAffinity/podAntiAffinity definition (replaces common.affinities
 {{- define "roundcube.affinities.pods.hard" -}}
 requiredDuringSchedulingIgnoredDuringExecution:
   - labelSelector:
-      matchLabels: {{- include "roundcube.labels.matchLabels" .context | nindent 8 }}
+      matchLabels: {{- include "roundcube.labels.matchLabels" (dict "context" .context) | nindent 8 }}
     topologyKey: kubernetes.io/hostname
 {{- end -}}
 
@@ -152,10 +177,14 @@ ssl://
 {{- end -}}
 
 {{- define "roundcube.desKey" -}}
-{{- if .Values.config.desKey }}
-{{- .Values.config.desKey -}}
+{{- $ctx := . -}}
+{{- if .context -}}
+{{- $ctx = .context -}}
+{{- end -}}
+{{- if $ctx.Values.config.desKey }}
+{{- $ctx.Values.config.desKey -}}
 {{- else -}}
-{{- $lookupResult := (lookup "v1" "Secret" .Release.Namespace (include "roundcube.fullname" . )).data -}}
+{{- $lookupResult := (lookup "v1" "Secret" $ctx.Release.Namespace (include "roundcube.fullname" $ctx )).data -}}
 {{- if $lookupResult -}}
 {{- (index $lookupResult "desKey" | b64dec) | default (randAlphaNum 64) -}}
 {{- else -}}
@@ -243,9 +272,13 @@ json_decode({{- . | toJson | quote -}}, true)
 Create the name of the service account to use
 */}}
 {{- define "roundcube.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create -}}
-{{ default (include "roundcube.fullname" .) .Values.serviceAccount.name }}
+{{- $ctx := . -}}
+{{- if .context -}}
+{{- $ctx = .context -}}
+{{- end -}}
+{{- if $ctx.Values.serviceAccount.create -}}
+{{ default (include "roundcube.fullname" $ctx) $ctx.Values.serviceAccount.name }}
 {{- else -}}
-{{ default "default" .Values.serviceAccount.name }}
+{{ default "default" $ctx.Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}

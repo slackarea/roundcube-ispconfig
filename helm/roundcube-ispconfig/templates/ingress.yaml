@@ -5,9 +5,9 @@ kind: Ingress
 metadata:
   name: {{ include "roundcube.fullname" . }}
   labels:
-    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- include "roundcube.labels.standard" . | nindent 4 }}
     {{- if .Values.ingress.additionalLabels }}
-    {{- include "common.tplvalues.render" ( dict "value" .Values.ingress.additionalLabels "context" $) | nindent 4 }}
+    {{- include "roundcube.tplvalues.render" ( dict "value" .Values.ingress.additionalLabels "context" $) | nindent 4 }}
     {{- end }}
   annotations:
     kubernetes.io/tls-acme: "true"
@@ -22,7 +22,7 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     {{ end }}
     {{- if .Values.ingress.additionalAnnotations }}
-    {{- include "common.tplvalues.render" ( dict "value" .Values.ingress.additionalAnnotations "context" $) | nindent 4 }}
+    {{- include "roundcube.tplvalues.render" ( dict "value" .Values.ingress.additionalAnnotations "context" $) | nindent 4 }}
     {{- end }}
 spec:
   {{- if .Values.ingress.ingressClassName }}

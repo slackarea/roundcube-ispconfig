@@ -8,14 +8,14 @@ kind: Deployment
 metadata:
   name: {{ include "roundcube.fullname" . }}
   labels:
-    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- include "roundcube.labels.standard" . | nindent 4 }}
     {{- if .Values.deployment.additionalLabels }}
-    {{- include "common.tplvalues.render" ( dict "value" .Values.deployment.additionalLabels "context" $) | nindent 4 }}
+    {{- include "roundcube.tplvalues.render" ( dict "value" .Values.deployment.additionalLabels "context" $) | nindent 4 }}
     {{- end }}
   annotations:
     roundcube/config-checksum: {{ $configChecksum }}
     {{- if .Values.deployment.additionalAnnotations }}
-    {{- include "common.tplvalues.render" ( dict "value" .Values.deployment.additionalAnnotations "context" $) | nindent 4 }}
+    {{- include "roundcube.tplvalues.render" ( dict "value" .Values.deployment.additionalAnnotations "context" $) | nindent 4 }}
     {{- end }}
 spec:
   replicas: {{ .Values.deployment.replicas }}
@@ -23,11 +23,11 @@ spec:
     {{ .Values.deployment.strategy | toYaml | nindent 4 }}
   selector:
     matchLabels:
-      {{- include "common.labels.matchLabels" . | nindent 6 }}
+      {{- include "roundcube.labels.matchLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "common.labels.standard" . | nindent 8 }}
+        {{- include "roundcube.labels.standard" . | nindent 8 }}
       annotations:
         roundcube/config-checksum: {{ $configChecksum }}
     spec:
@@ -186,9 +186,9 @@ spec:
           emptyDir: {}
           {{- end }}
       {{- if .Values.deployment.affinity }}
-      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.deployment.affinity "context" $) | nindent 8 }}
+      affinity: {{- include "roundcube.tplvalues.render" (dict "value" .Values.deployment.affinity "context" $) | nindent 8 }}
       {{- else }}
       affinity:
-        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.deployment.podAffinityPreset "context" $) | nindent 10 }}
-        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.deployment.podAntiAffinityPreset "context" $) | nindent 10 }}
+        podAffinity: {{- include "roundcube.affinities.pods" (dict "type" .Values.deployment.podAffinityPreset "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "roundcube.affinities.pods" (dict "type" .Values.deployment.podAntiAffinityPreset "context" $) | nindent 10 }}
       {{- end }}

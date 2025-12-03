@@ -4,13 +4,13 @@ kind: ConfigMap
 metadata:
   name: {{ include "roundcube.fullname" . }}
   labels:
-    {{- include "common.labels.standard" . | nindent 4 }}
+    {{- include "roundcube.labels.standard" . | nindent 4 }}
     {{- if .Values.configMap.additionalLabels }}
-    {{- include "common.tplvalues.render" ( dict "value" .Values.configMap.additionalLabels "context" $) | nindent 4 }}
+    {{- include "roundcube.tplvalues.render" ( dict "value" .Values.configMap.additionalLabels "context" $) | nindent 4 }}
     {{- end }}
   annotations:
     {{- if .Values.configMap.additionalAnnotations }}
-    {{- include "common.tplvalues.render" ( dict "value" .Values.configMap.additionalAnnotations "context" $) | nindent 4 }}
+    {{- include "roundcube.tplvalues.render" ( dict "value" .Values.configMap.additionalAnnotations "context" $) | nindent 4 }}
     {{- end }}
 data:
   php.ini: |
