@@ -1,0 +1,72 @@
+name: Check Upstream Releases
+
+on:
+  schedule:
+    # Ogni giorno alle 8:00 UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch:  # Permette trigger manuale
+
+jobs:
+  check-and-trigger:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Get latest Roundcube version
+        id: roundcube
+        run: |
+          LATEST=$(curl -s https://api.github.com/repos/roundcube/roundcubemail/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+          echo "Latest Roundcube version: ${LATEST}"
+          echo "version=${LATEST}" >> $GITHUB_OUTPUT
+          
+      - name: Get current Docker Hub version
+        id: current
+        run: |
+          CURRENT=$(curl -s "https://hub.docker.com/v2/repositories/vcnngr/roundcube-ispconfig/tags?page_size=100" | \
+            jq -r '.results[].name' | \
+            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | \
+            sed 's/^v//' | \
+            sort -V | \
+            tail -1)
+          echo "Current Docker Hub version: ${CURRENT}"
+          echo "version=${CURRENT}" >> $GITHUB_OUTPUT
+          
+      - name: Compare versions
+        id: compare
+        run: |
+          LATEST="${{ steps.roundcube.outputs.version }}"
+          CURRENT="${{ steps.current.outputs.version }}"
+          
+          echo "Latest upstream: ${LATEST}"
+          echo "Current image:   ${CURRENT}"
+          
+          if [ "${LATEST}" != "${CURRENT}" ]; then
+            echo "New version available!"
+            echo "new_version=true" >> $GITHUB_OUTPUT
+          else
+            echo "Already up to date"
+            echo "new_version=false" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Trigger Jenkins build
+        if: steps.compare.outputs.new_version == 'true'
+        run: |
+          echo "Triggering Jenkins build for version ${{ steps.roundcube.outputs.version }}"
+          
+          curl -X POST \
+            --user "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}" \
+            "https://jenkins.ingrosso.net/job/roundcube-ispconfig/buildWithParameters?ROUNDCUBE_VERSION=${{ steps.roundcube.outputs.version }}"
+          
+          echo "Jenkins build triggered!"
+          
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Failed to check/trigger Roundcube update',
+              body: 'The upstream check workflow failed. Please investigate.',
+              labels: ['automation', 'bug']
+            })
