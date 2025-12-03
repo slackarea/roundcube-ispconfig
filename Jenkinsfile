@@ -70,11 +70,9 @@ spec:
     environment {
         DOCKER_IMAGE = 'vcnngr/roundcube-ispconfig'
         HELM_CHART_NAME = 'roundcube-ispconfig'
-        HELM_CHART_PATH = './helm/roundcube-ispconfig'
         CHARTS_REPO = 'slackarea/charts'
         SONAR_HOST_URL = 'http://sonarqube-sonarqube.jenkins.svc.cluster.local:9000'
         SONAR_PROJECT_KEY = 'roundcube-ispconfig'
-        REPORTS_DIR = 'security-reports'
     }
     
     stages {
@@ -102,6 +100,9 @@ spec:
                     env.DOCKER_TAG = "v${params.ROUNDCUBE_VERSION}"
                     env.CHART_VER = params.CHART_VERSION?.trim() ?: params.ROUNDCUBE_VERSION
                     env.RC_VERSION = params.ROUNDCUBE_VERSION
+                    env.WORKSPACE_PATH = "/home/jenkins/agent/workspace/roundcube-ispconfig"
+                    env.CHART_PATH = "${env.WORKSPACE_PATH}/helm/roundcube-ispconfig"
+                    env.PKG_PATH = "${env.WORKSPACE_PATH}/helm/packages"
                 }
                 sh 'mkdir -p security-reports'
                 echo "Roundcube: ${env.RC_VERSION} | Docker: ${env.DOCKER_TAG} | Chart: ${env.CHART_VER}"
@@ -112,8 +113,8 @@ spec:
             steps {
                 container('helm') {
                     sh '''
-                        CHART_PATH="/home/jenkins/agent/workspace/roundcube-ispconfig/helm/roundcube-ispconfig"
-                        helm lint ${CHART_PATH} || echo "Lint warnings (non-blocking)"
+                        cd ${CHART_PATH}
+                        helm lint . -f values.lint.yaml
                     '''
                 }
             }
@@ -169,7 +170,6 @@ spec:
             steps {
                 container('helm') {
                     sh '''
-                        CHART_PATH="/home/jenkins/agent/workspace/roundcube-ispconfig/helm/roundcube-ispconfig"
                         sed -i "s/^version:.*/version: ${CHART_VER}/" ${CHART_PATH}/Chart.yaml
                         sed -i "s/^appVersion:.*/appVersion: \\"${DOCKER_TAG}\\"/" ${CHART_PATH}/Chart.yaml
                         echo "Updated Chart.yaml:"
@@ -197,20 +197,16 @@ spec:
                             # Export with loopback pinentry (no TTY needed)
                             echo "${GPG_PASS}" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --export-secret-keys > ${GNUPGHOME}/secring.gpg
                             
-                            # Verify export worked
-                            ls -la ${GNUPGHOME}/secring.gpg
-                            
-                            CHART_PATH="/home/jenkins/agent/workspace/roundcube-ispconfig/helm/roundcube-ispconfig"
-                            PKG_PATH="/home/jenkins/agent/workspace/roundcube-ispconfig/helm/packages"
                             mkdir -p ${PKG_PATH}
-                            
                             echo "${GPG_PASS}" > /tmp/pass
+                            
                             helm package ${CHART_PATH} \
                                 --sign \
                                 --key "VCNNGR Helm Signing" \
                                 --keyring ${GNUPGHOME}/secring.gpg \
                                 --passphrase-file /tmp/pass \
                                 --destination ${PKG_PATH}
+                            
                             rm /tmp/pass
                             ls -la ${PKG_PATH}/
                         '''
@@ -225,11 +221,10 @@ spec:
                     withCredentials([string(credentialsId: 'github-token', variable: 'GH_TOKEN')]) {
                         sh '''
                             apk add --no-cache git
-                            PKG_PATH="/home/jenkins/agent/workspace/roundcube-ispconfig/helm/packages"
-                            REPO_PATH="/home/jenkins/agent/workspace/roundcube-ispconfig/charts-repo"
+                            REPO_PATH="${WORKSPACE_PATH}/charts-repo"
                             git clone https://${GH_TOKEN}@github.com/${CHARTS_REPO}.git ${REPO_PATH}
                             cp ${PKG_PATH}/*.tgz ${REPO_PATH}/
-                            cp ${PKG_PATH}/*.prov ${REPO_PATH}/
+                            cp ${PKG_PATH}/*.prov ${REPO_PATH}/ || true
                             cd ${REPO_PATH}
                             git config user.email "jenkins@vcnngr.com"
                             git config user.name "Jenkins"
@@ -243,7 +238,7 @@ spec:
                     withCredentials([string(credentialsId: 'github-token', variable: 'GH_TOKEN')]) {
                         sh '''
                             apk add --no-cache git
-                            REPO_PATH="/home/jenkins/agent/workspace/roundcube-ispconfig/charts-repo"
+                            REPO_PATH="${WORKSPACE_PATH}/charts-repo"
                             cd ${REPO_PATH}
                             helm repo index . --url https://slackarea.github.io/charts --merge index.yaml || helm repo index . --url https://slackarea.github.io/charts
                             git add index.yaml
