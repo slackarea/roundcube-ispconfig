@@ -1,11 +1,21 @@
-
 Congratulations!
 Your {{ include "roundcube.fullname" . }} instance has successfully been installed!
 
-You can access roundcube now at
+{{- if .Values.ingress.enabled }}
+You can access Roundcube at:
 
-  https://{{ .Values.service.name }}.{{ .Values.service.namespace }}.svc.cluster.local:{{ .Values.service.port }}
+  https://{{ .Values.ingress.host }}
+{{- else }}
+To access Roundcube, run:
 
+  kubectl port-forward svc/{{ include "roundcube.fullname" . }} 8080:80 -n {{ .Release.Namespace }}
 
-For support or feature requests raise an issue here:
-  https://github.com/slackarea/helm/tree/main/roundcube-ispconfig-chart
+Then open: http://localhost:8080
+{{- end }}
+
+IMAP Server: {{ .Values.imap.host }}:{{ .Values.imap.port }}
+SMTP Server: {{ .Values.smtp.host }}:{{ .Values.smtp.port }}
+Database:    {{ .Values.externalDatabase.type }}://{{ .Values.externalDatabase.host }}:{{ .Values.externalDatabase.port }}/{{ .Values.externalDatabase.database }}
+
+For support or feature requests, raise an issue at:
+  https://github.com/slackarea/roundcube-ispconfig/issues
