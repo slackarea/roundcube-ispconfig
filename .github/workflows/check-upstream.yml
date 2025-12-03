@@ -53,8 +53,7 @@ jobs:
           echo "Triggering Jenkins build for version ${{ steps.roundcube.outputs.version }}"
           
           curl -X POST \
-            --user "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}" \
-            "https://jenkins.ingrosso.net/job/roundcube-ispconfig/buildWithParameters?ROUNDCUBE_VERSION=${{ steps.roundcube.outputs.version }}"
+            "https://jenkins.ingrosso.net/job/roundcube-ispconfig/buildWithParameters?token=${{ secrets.JENKINS_BUILD_TOKEN }}&ROUNDCUBE_VERSION=${{ steps.roundcube.outputs.version }}&cause=Upstream+release+${{ steps.roundcube.outputs.version }}"
           
           echo "Jenkins build triggered!"
           
