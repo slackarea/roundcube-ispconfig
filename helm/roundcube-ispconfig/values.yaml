@@ -259,7 +259,7 @@ deployment:
 
   containers:
     nginx:
-      image: nginx:1.25.4
+      image: nginx:1.27-alpine
       imagePullPolicy: IfNotPresent
 
 
