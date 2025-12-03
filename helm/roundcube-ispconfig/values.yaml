@@ -261,6 +261,18 @@ deployment:
     nginx:
       image: nginx:1.27-alpine
       imagePullPolicy: IfNotPresent
+      readinessProbe:
+        path: /
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 12
+      livenessProbe:
+        path: /
+        initialDelaySeconds: 60
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 6
 
 
 ## Additional configuration for the Service resource

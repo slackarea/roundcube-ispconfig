@@ -136,9 +136,9 @@ spec:
               mountPath: /var/www/html
             - name: roundcube-data
               mountPath: /var/www/html/plugins
-          {{ if .Values.deployment.resources }}
+          {{- if .Values.deployment.resources }}
           resources: {{ .Values.deployment.resources | toYaml | nindent 12 }}
-          {{ end }}
+          {{- end }}
         - name: nginx
           image: {{ .Values.deployment.containers.nginx.image }}
           imagePullPolicy: {{ .Values.deployment.containers.nginx.imagePullPolicy }}
@@ -155,19 +155,20 @@ spec:
               protocol: TCP
           readinessProbe:
             httpGet:
-              path: /
+              path: {{ .Values.deployment.containers.nginx.readinessProbe.path | default "/" }}
               port: {{ .Values.deployment.port }}
-            timeoutSeconds: 2
-            periodSeconds: 3
-            initialDelaySeconds: 5
+            initialDelaySeconds: {{ .Values.deployment.containers.nginx.readinessProbe.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ .Values.deployment.containers.nginx.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.deployment.containers.nginx.readinessProbe.timeoutSeconds | default 5 }}
+            failureThreshold: {{ .Values.deployment.containers.nginx.readinessProbe.failureThreshold | default 12 }}
           livenessProbe:
             httpGet:
-              path: /
+              path: {{ .Values.deployment.containers.nginx.livenessProbe.path | default "/" }}
               port: {{ .Values.deployment.port }}
-            timeoutSeconds: 2
-            periodSeconds: 3
-            initialDelaySeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.deployment.containers.nginx.livenessProbe.initialDelaySeconds | default 60 }}
+            periodSeconds: {{ .Values.deployment.containers.nginx.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.deployment.containers.nginx.livenessProbe.timeoutSeconds | default 5 }}
+            failureThreshold: {{ .Values.deployment.containers.nginx.livenessProbe.failureThreshold | default 6 }}
       imagePullSecrets:
       {{- range .Values.deployment.imagePullSecrets }}
         - name: {{ .name }}
