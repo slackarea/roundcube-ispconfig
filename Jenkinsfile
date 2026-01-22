@@ -223,8 +223,8 @@ spec:
                             apk add --no-cache git
                             REPO_PATH="${WORKSPACE_PATH}/charts-repo"
                             git clone https://${GH_TOKEN}@github.com/${CHARTS_REPO}.git ${REPO_PATH}
-                            cp ${PKG_PATH}/*.tgz ${REPO_PATH}/
-                            cp ${PKG_PATH}/*.prov ${REPO_PATH}/ || true
+                            cp ${PKG_PATH}/*.tgz ${REPO_PATH}/roundcube-ispconfig/
+                            cp ${PKG_PATH}/*.prov ${REPO_PATH}/roundcube-ispconfig/ || true
                             cd ${REPO_PATH}
                             git config user.email "jenkins@vcnngr.com"
                             git config user.name "Jenkins"
